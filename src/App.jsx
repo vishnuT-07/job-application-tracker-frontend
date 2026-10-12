@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import './App.css';
 import Navbar from './components/Navbar';
 import Dashboard from './components/Dashboard';
 import ApplicationList from './components/ApplicationList';
@@ -7,7 +8,7 @@ import ApplicationModal from './components/ApplicationModal';
 import ApplicationDetailsModal from './components/ApplicationDetailsModal';
 import InterviewModal from './components/InterviewModal';
 import { api } from './services/api';
-import { CheckCircle, AlertTriangle, X, RefreshCw } from 'lucide-react';
+import { CheckCircle, AlertTriangle, X, RefreshCw, Terminal } from 'lucide-react';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -15,7 +16,7 @@ export default function App() {
   const [interviews, setInterviews] = useState([]);
   const [dashboardStats, setDashboardStats] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [errorBanner, setErrorBanner] = useState(null);
+  const [isBackendLive, setIsBackendLive] = useState(null);
 
   // Search & Filters
   const [searchKeyword, setSearchKeyword] = useState('');
@@ -46,10 +47,10 @@ export default function App() {
         status: statusFilter,
       });
       setApplications(data || []);
-      setErrorBanner(null);
+      setIsBackendLive(api.getBackendStatus());
     } catch (err) {
       console.error('Error fetching applications:', err);
-      setErrorBanner(err.message);
+      setIsBackendLive(false);
     }
   }, [searchKeyword, statusFilter]);
 
@@ -58,9 +59,10 @@ export default function App() {
     try {
       const stats = await api.getDashboardStats();
       setDashboardStats(stats);
-      setErrorBanner(null);
+      setIsBackendLive(api.getBackendStatus());
     } catch (err) {
       console.error('Error fetching stats:', err);
+      setIsBackendLive(false);
     }
   }, []);
 
@@ -69,8 +71,10 @@ export default function App() {
     try {
       const list = await api.getInterviews(false);
       setInterviews(list || []);
+      setIsBackendLive(api.getBackendStatus());
     } catch (err) {
       console.error('Error fetching interviews:', err);
+      setIsBackendLive(false);
     }
   }, []);
 
@@ -168,6 +172,17 @@ export default function App() {
     }
   };
 
+  const handleCheckConnection = async () => {
+    setLoading(true);
+    await Promise.all([fetchApplications(), fetchDashboardStats(), fetchInterviews()]);
+    setLoading(false);
+    if (api.getBackendStatus()) {
+      showToast('Successfully connected to Spring Boot backend!', 'success');
+    } else {
+      showToast('Spring Boot backend is not running yet on port 8080.', 'error');
+    }
+  };
+
   return (
     <div className="app-root">
       {/* Toast Notification */}
@@ -191,23 +206,23 @@ export default function App() {
         }}
         applicationCount={applications.length}
         interviewCount={interviews.length}
+        isBackendLive={isBackendLive}
       />
 
       {/* Backend connection warning banner */}
-      {errorBanner && (
-        <div className="connection-error-banner">
-          <AlertTriangle size={20} />
-          <div className="error-banner-text">
-            <strong>Backend Connection Issue:</strong> {errorBanner}
+      {isBackendLive === false && (
+        <div className="connection-banner warning">
+          <div className="banner-content">
+            <AlertTriangle size={20} color="#d97706" />
+            <div>
+              <strong>Backend Offline:</strong> Spring Boot server not detected on port 8080.
+              Running in <strong>Interactive Demo Mode</strong> with sample data.
+              To connect to PostgreSQL live, run in backend terminal: <span className="banner-code">cd backend; mvn spring-boot:run</span>
+            </div>
           </div>
-          <button
-            className="btn btn-sm btn-secondary"
-            onClick={() => {
-              fetchApplications();
-              fetchDashboardStats();
-            }}
-          >
-            <RefreshCw size={14} /> Retry
+          <button className="btn btn-sm btn-secondary" onClick={handleCheckConnection}>
+            <RefreshCw size={14} />
+            <span>Check Connection</span>
           </button>
         </div>
       )}

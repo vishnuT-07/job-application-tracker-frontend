@@ -1,7 +1,14 @@
 import React from 'react';
-import { Briefcase, LayoutDashboard, Calendar, Plus } from 'lucide-react';
+import { Briefcase, LayoutDashboard, Calendar, Plus, Server, CheckCircle2 } from 'lucide-react';
 
-export default function Navbar({ activeTab, setActiveTab, onOpenAddModal, applicationCount = 0, interviewCount = 0 }) {
+export default function Navbar({
+  activeTab,
+  setActiveTab,
+  onOpenAddModal,
+  applicationCount = 0,
+  interviewCount = 0,
+  isBackendLive = null,
+}) {
   return (
     <header className="navbar">
       <div className="navbar-container">
@@ -44,6 +51,18 @@ export default function Navbar({ activeTab, setActiveTab, onOpenAddModal, applic
         </nav>
 
         <div className="navbar-actions">
+          {isBackendLive === true ? (
+            <span className="backend-status-pill live" title="Connected to Spring Boot & PostgreSQL">
+              <span className="status-dot-pulse"></span>
+              <span>Backend Live</span>
+            </span>
+          ) : (
+            <span className="backend-status-pill demo" title="Backend not running; showing interactive preview data">
+              <span className="status-dot-pulse"></span>
+              <span>Demo Mode</span>
+            </span>
+          )}
+
           <button className="btn btn-primary" onClick={onOpenAddModal}>
             <Plus size={16} />
             <span>Add Application</span>
